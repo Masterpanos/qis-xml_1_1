@@ -1,0 +1,535 @@
+module reusableElements-QKD {
+
+	yang-version 1;
+	
+    namespace "urn:ge:grc:tsn:scheduler";
+      
+    prefix "scheduler";
+
+    // import ietf-inet-types {
+	//	prefix "inet";
+	//}
+	
+	import ieee-sdqc-qis-types { 
+		prefix "qis";
+	}
+	
+	//import ietf-yang-types {
+	//	prefix "yang";
+	//}
+	
+	revision 2017-02-10 {
+		description "Initial draft";
+        reference "TBD";
+    }
+	
+// Reusable Elements for QKD YANG Model
+
+// Quantum Source
+
+grouping PhotonSourceType {
+
+    description "Quantum Sources that generate single qubits, entangled qubit pairs, or a number of qubits";
+
+	choice QuantumSourceType {
+	
+        description "The qubit generation method of this source";
+
+        case discrete-source {
+
+	        description "Discrete Photon Source";
+
+            leaf second-order-correlation { 
+
+        		// Is this redundant, considering that we define photons / sec and pulses / sec (further down in this document)? If photons / sec = pulses / sec, then there is 1 photon per pulse.
+        		config false; 
+                description "The second order correlation function at zero time delay quantifies the photon number statistics. 0: perfect single photon / single photon pair source, 1: perfect coherent source.";
+
+		     	type uint32;
+            }
+
+	      	choice discreteSourceType {
+
+				case attenuated-coherent-laser {
+
+					container attenuated-coherent-laser { 
+
+						// Should we create a container with the same name as the case it belongs to, or not?
+
+						description "Attenuated Coherent Laser";
+						
+						container quantum-output-state {
+
+			                config true; // configurable
+
+			                // reference "paper title";
+
+			                description "Quantum Output State: Any superposition of the computational basis's states. All qubits will be encoded in the same state";
+			                uses qis:QubitType;
+						}
+					}
+				}
+
+				case entangled-pair-source {
+
+					container entangled-pair-source { 
+
+						// Should we create a container with the same name as the case it belongs to, or not?
+						
+						description "Entangled Photon Pair Source";
+
+						container quantum-output-state {
+				
+							config true; // configurable
+							description "Quantum Output State: Any Bell State or combination thereof, specified through four coefficients";
+
+							// Consider more general cases with multiple qubits:
+							// uses Pascal's quantum register type from his thesis
+
+							uses qis:QubitPairType;
+						}
+
+						leaf entanglement-quality {
+
+							config false; // not configurable
+							description "Range (0, 1]. 0: No entanglement, 1: Maximally entangled states";
+							type uint32;
+						}
+					}
+				}
+			}
+        }
+
+        case continuous-source {
+
+            container weakly-modulated-coherent-laser { 
+            	
+            	// Should we create a container with the same name as the case it belongs to, or not?
+                
+                description "Weakly Modulated Coherent Laser";
+
+                leaf quantum-output-phase-difference {
+
+                	config true;
+                    description "Phase difference between the weak signal pulse and the reference signal.";
+                    value uint32;
+                }
+
+                container quantum-output-state {
+                    // Any suggestions?
+                    config true;
+
+                    // reference
+                }
+            }
+        }
+	}
+
+	container source-intensity {
+
+        description "Photon Source Intensity in average number of photons/second. Example: 200,000 photons/second";
+
+        config true; // configurable
+
+        leaf value {
+            description "The count";
+            type uint32;
+        }
+
+        leaf time-unit {
+            description "The unit of time in seconds. Default to second (s).";
+            type sdqc-type:unit-metric-time-second;
+            default s;
+        }
+	}
+
+	container pulse-duration { 
+
+        config true; // configurable
+
+	    description "The duration of each generated pulse";
+
+	    leaf value {
+	        description "The value in specified unit of time";
+
+	        type uint32;
+	    }
+	    leaf unit {
+	        description "The unit of time. Default to second (s)";
+
+	        type sdqc-type:unit-metric-time-second;
+	        default s;
+	    }
+	}
+
+	container photons-per-pulse {
+
+		config true; // configurable (?) What does configurable mean? Not changeable during a use case or not changeable at all?
+
+		description "The number of photons per pulse.";
+
+		leaf value {
+			description "The count";
+			type uint32;
+		}
+	}
+
+	// Average number of photons per pulse?	It may be calculated by the pulse-duration and the source-intensity...
+
+	container quantum-output-wavelength {
+
+	    config false; // not currently configurable
+	    description "Quantum Output Wavelength in nanometer (nm). Example: 1550 +/- 1 nm";
+	    uses sdqc-type:WavelengthType;
+	}
+
+	container quantum-source-pulse-rate {
+
+	    config true; // configurable
+
+	    description "Quantum Source Pulse Rate in Hertz (Hz). Example: 0-20 MHz";
+
+	    leaf min {
+	        description "Minimum Quantum Source Pulse Rate in Hertz (Hz)";
+	        type uint32;
+	        default 0;
+		}
+
+	    leaf max {
+	        description "Maximum Quantum Source Pulse Rate in Hertz (Hz)";
+	        type uint32;
+	    }
+
+	    leaf unit-exponent {
+	        description "Base unit multiplier. Default Hz (0)";
+	        type sdqc-type:unit-exponent;
+	        default 0;
+	    }
+
+	}
+}
+
+// Qubit Pair Register
+grouping QubitPairType {
+	container zero {
+            uses ComplexNumberType;
+            description "The |00> basis state of the qubit pair";
+    }
+    container one {
+            uses ComplexNumberType;
+            description "The |01> basis state of the qubit pair";
+    }
+    container two {
+            uses ComplexNumberType;
+            description "The |10> basis state of the qubit pair";
+    }
+    container three {
+            uses ComplexNumberType;
+            description "The |11> basis state of the qubit pair";
+    }
+        
+	description "A Pair of Qubits";
+}
+
+// Quantum Detector
+
+grouping PhotonDetectorType {
+
+    description "Quantum detectors that measure/detect the received photons";
+
+    leaf photon-receiver-efficiency {
+
+    	config false; // not currently configurable
+        description "Photon Receiver Efficiency as a percentage. Example: 10%";
+        type uint8 {
+			range "0..100";
+		}
+    }
+ 
+    choice detector {
+
+        description "Detection method";	
+        
+        case single-photon {
+	        description "Photon counter for measuring a qubit in the desired basis for discrete variable protocols";	
+
+	        /////////////////
+	        // Either this
+	        list operation {
+	            description "The collection of operations for measuring in the desired basis. Example: Hadamard gate";
+	            uses qis:OperationType;
+	        }
+
+	        // or this
+	        container basis-state-one {
+	        	description "The first orthogonal state of the measurement basis.";
+	        	uses qis:QubitType;
+	        }
+
+	        container basis-state-two {
+	        	description "The second orthogonal state of the measurement basis.";
+	        	uses qis:QubitType;
+	        }
+
+	        ////////////////
+
+	        container single-photon-detection-wavelength {
+	            config false; // not currently configurable
+	            description "Single Photon Detection Wavelength. Example: 1550 +/- 3 nm";
+				uses sdqc-type:WavelengthType;
+	        }
+
+			container max-photon-detection-rate {
+
+				config false; // not currently configurable
+				description "Max Photon Detection Rate in count-unit per second. Example: 20M counts/second";
+		     
+		     	leaf value {
+					description "The count";
+					type uint64;
+				}
+
+		     	leaf count-unit {
+					description "The unit of count";
+					type sdqc-type:unit-exponent-integral;
+					default 0;
+				}
+	        }
+
+	        container dark-count {
+	            
+	            config false; // not currently configurable
+	            description "Dark Count Rate in count-unit per second. Example: 20k counts/second";
+
+				leaf value {
+					description "The count";
+					type uint64;
+	            }
+		     
+		     	leaf count-unit {
+					description "The unit of count";
+					type sdqc-type:unit-exponent-integral;
+					default 0;
+		     	}
+	        }
+
+			container single-photon-receiver-dead-time {
+				
+				config false; // not currently configurable
+				description "Single Photon Receiver Dead time in specific unit of time (default ns). Example: 30ns";
+		     
+		     	leaf value {
+		        	description "The value in specified unit ot time";
+					type uint32;
+	            }
+
+		     	leaf unit {
+		        	description "The unit of time";
+		         	type sdqc-type:unit-metric-time-second;
+		         	default ns;
+		     	}
+	        }
+
+			container optical-key-packet-detection-window {
+
+				config true; // configurable
+				description "Optical Key Packet Detection Window in millisecond (ms). Example: 1 second";
+
+		     	leaf value {
+		         	description "Window size";
+		         	type uint32;
+	            }
+		     	
+		     	leaf time-unit {
+		        	description "Unit of time in seconds or sub-unit of. Default is ms";
+		         	type sdqc-type:unit-metric-time-second;
+		         	default ms;
+		     	}
+	        }
+
+	        container jitter { 
+
+	        	config false; // not configurable
+
+	            description "Timing Jitter in picosecond (ps) to nanosecond (ns). Example: 60 ps";
+		     
+		     	leaf value {
+		        	description "Time";
+		         	type uint32;
+	        	}
+		     
+		     	leaf time-unit {
+		         	description "Unit of time in seconds or sub-unit of. Default is ns.";
+		         	type sdqc-type:unit-metric-time-second;
+	                default ns;
+	            }
+	        }
+    	}
+
+        case homodyne {
+
+            description "Homodyne detector for continuous variable quantum states";	
+
+            container bandwidth {
+
+            	config false; // not currently configurable
+                description "Bandwidth of homodyne detector in Hz. Example: 300M Hz";
+	     	
+	     		leaf value {
+	         		description "The value specified in Hz";
+                    type uint64;
+                }
+
+                leaf count-unit {
+                	description "The unit of bandwidth";
+	         		type sdqc-type:unit-exponent-integral;
+                    default 0;
+                }
+            }
+        }
+
+        case heterodyne {
+
+            description "Heterodyne detector for continuous variable quantum states";	
+
+            container bandwidth {
+
+                config false; // not currently configurable
+                description "Bandwidth of homodyne detector in Hz. Example: 300M Hz";
+
+	     		leaf value {
+	         		description "The value specified in Hz";
+                    type uint64;
+                }
+
+                leaf count-unit {
+                    description "The unit of banwidth";
+	         		type sdqc-type:unit-exponent-integral;
+                    default 0;
+                }
+            }
+        }
+    }
+}
+
+// Channel grouping:
+// QBER 
+// Distance
+// p = p/3 X. p/3 Z. p/3 Y
+// fibre optic configurable:
+// length, loss / m, bit flip probability / m, visibility (description quality degradation)
+// free space:
+// length, loss / m, bit flip probability / m, visibility (description quality degradation)
+
+grouping QuantumChannelType {
+
+	leaf channel-type {
+	    type enumeration {
+	        enum commercial { description "Commercial Fiber";}
+			enum dedicated-dark { description "Dedicated Dark Fiber";}
+			enum free-space {description "Free Space"; }
+	    }
+	    description "Type of channel";
+	}
+
+	leaf distance { 
+		config false;
+		description "Distance between the source and the destination in kilometers";
+		type uint32; // or type uint64? When do we use each of them?
+	}
+
+	leaf loss {
+		config false;
+		description "Loss per meter in dB";
+		type uint32;
+	}
+
+	leaf bit-flip-probability {
+		config false;
+		description "Bit flip probability per meter";
+		type uint32;
+	}
+
+	leaf visibility {
+		config false;
+		// Is it the same as the distance?
+	}
+}
+
+// Sifting
+typedef public-discussion-type {
+    description "Public Discussion protocol";
+    type enumeration {
+        enum BB84 { description "BB84"; }
+        enum E91 { description "E91 or BBM92"; }  // Qubitekk (Qubi2)
+        enum B92 { description "B92"; }
+        enum SARG04 { description "SARG04"; }
+        enum CV { description "CV-QKD"; } // There are other CV-QKD protocols, which can be listed
+    }
+}
+
+// Not grouping?
+//leaf public-discussion-protocol {
+//    type public-discussion-type;
+//    description "Public Discussion protocol";
+//}
+
+// Error Reconciliation
+
+typedef error-correction-method-type {
+    description "Error Correction Methods";
+    type enumeration {
+        enum cascade { description "CASCADE"; }
+        enum LDPC { description "LDPC"; }
+    }
+}
+
+grouping ErrorCorrectionMethodType {
+
+    type error-correction-method-type;
+    description "Error Correction Method";
+
+    leaf coding-rate {
+    	config true; // configurable
+        description "Coding Rate";
+        type uint8 { range "0..1"; }    	
+    }
+
+    leaf block-size {
+    	config true; // configurable
+    	description "Block Size";
+    	type uint8;
+    }
+}
+
+// Privacy Amplification
+typedef privacy-amplification-method-type {
+	
+	type enumeration {
+		enum wegman-carter { description "Wegman Carter Strongly Universal Hashing"; }
+	}
+
+	description "Privacy Amplification Methods";
+
+}
+
+grouping PrivacyAmplificationMethodType {
+	
+	type privacy-amplification-method-type;
+	description "Privacy Amplification Method";
+
+	leaf output-key-length {
+		config true;
+		description "Length of the output key in number of bits";
+		type uint8;
+	}
+}
+
+uses PhotonSourceType;
+uses PrivacyAmplificationMethodType;
+uses ErrorCorrectionMethodType;
+uses QuantumChannelType;
+uses PhotonDetectorType;
+uses PhotonSourceType;
+uses QubitPairType;
+}
