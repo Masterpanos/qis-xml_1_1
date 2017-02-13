@@ -1,0 +1,225 @@
+module ieee-sdqc-qkd {
+  
+    yang-version 1;
+    
+    namespace
+      "urn:ieee:params:xml:ns:yang:sdqc-qkd";
+      
+    prefix sqdc;
+
+    //import ietf-yang-types { prefix yang; }
+    //import ietf-inet-types { prefix inet; }
+    //import ietf-ext-xponder-wdm-if { prefix ietf-ext-xponder-wdm-if;}
+    
+    import plgah-qis-types { prefix qis; }
+    import ieee-sdqc-types { prefix sdqc-type; }
+    import reusableElements { prefix ?; } // How do we include it?
+
+    organization 
+      "IEEE P1913 Software-Defined Quantum Communication Working Group";
+
+    contact 
+      "stds-P1913@IEEE.ORG";
+
+    description
+      "This module describes configuration of quantum key distribution (QKD) quantum devices.";
+
+    revision 2016-09-26 {
+    	description "
+        	- aligned qmac-address on classical mac-address from ietf-yang-types
+			- Added WavelengthType and reused across
+          	- Added length-unit type enumeration
+          	- max-photon-detection-rate: added unit
+          	- single-photon-receiver-dead-time: added unit
+          	- adjusted units
+	  		- reordered alphabetically
+          	- added fiber-type
+	  		";
+        reference "IEEE-P1913 subgroup";
+    }
+
+    revision 2016-09-18 {        
+    	description "Initial internal release.";
+        reference "IEEE-P1913 subgroup";
+    }
+
+    revision 2017-02-10 {        
+    	description "Restructured the module using reusableElements-QKD.yang - under revision";
+        reference "IEEE-P1913 subgroup";
+    }
+    
+    container qkd {
+		description "Software Defined Quantum Communication: Quantum Key Distribution";
+      	
+      	choice configuration-mode {
+	    	case QKD-source {
+				description "Configuration at the source,  namely Alice";
+		
+				container random-qubit-generation {
+		    		description "Generate random qubits in the desired basis (random number generator not incorporated)";    
+		    		uses PhotonSourceType;
+				}
+		
+				leaf current-key-id {
+		    		description "Current Key ID";
+		    		// configurable by transmitter
+		    		type string;                            
+				}
+	    	}
+	    
+	    	case QKD-destination {
+				description "Configuration at the destination, namely Bob";
+		
+				container qubit-detection {
+		    		description "Measure the received qubits in the desired basis";    
+		    		uses PhotonDetectorType;
+				} 
+			}
+		}
+	
+		container quantum-channel {
+	    	description "Quantum channel for transmitting the randomly generated qubits";
+	    	uses QuantumChannelType;
+		}
+  
+		leaf public-discussion-protocol {
+	    	description "Public Discussion with the QKD-destination for comparing the basis and detection of eavesdropper";
+	    	type public-discussion-type;
+		}
+  
+		container information-reconciliation {
+		    description "Information reconciliation with the QKD-destination for correcting errors";
+		    uses ErrorCorrectionMethodType;
+		}
+	
+		container privacy-amplification {
+		    description "Privacy amplification method for pruning the shared key";
+		    uses PrivacyAmplificationMethodType;    
+		}  
+	
+		container classical-transceiver-wavelength {
+		    description "Classical Transceiver Wavelength. Example: 1310nm";
+		    config false; // not currently configurable            
+		    uses sdqc-type:WavelengthType;
+		}
+	
+		container classical-transceiver-rate {
+		    // configurable
+	        description "Classical Transceiver Rate in bits per second (bps). Example: 10-100 Mpbs";
+
+		    leaf min {
+		        type uint64;
+	                description "Minimum Classical Transceiver Rate in bits per second (bps)";
+		    }
+		    leaf max {
+		        type uint64;
+	                description "Maximum Classical Transceiver Rate in bits per second (bps)";
+		    }
+		    leaf bps-exponent {
+		        type sdqc-type:unit-exponent-integral;
+				default M;
+				description "Base unit multiplier. Default is Mbps (M)";
+		    }
+		}
+	
+
+		// Do we need to define both the transceiver as well as the receiver rate? 
+		container classical-receiver-rate {  					
+	    	config true; // configurable
+            description "Classical Receiver Rate in bits per second (bps). Example: 10-100 Mpbs";
+	    
+		    leaf min {
+	            description "Minimum Classical Receiver Rate in bits per second (bps)";
+		        type uint64;
+		    }
+		    leaf max {
+				description "Maximum Classical Receiver Rate in bits per second (bps)";
+		        type uint64;
+		    }
+		    leaf bps-exponent {
+				description "Base unit multiplier. Default is Mbps (M)";
+		        type sdqc-type:unit-exponent-integral;
+				default M;
+		    }
+        }
+        
+        container max-key-storage-time {
+	    	description "Max key storage time in milliseconds (ms). Εxample: 60 sec";
+	    	leaf value {
+				description "Value in specified unit of time";
+	        	type uint64;
+	    	}
+	    	leaf time-unit {
+				description "Unit of time (second or sub-second)";
+	        	type sdqc-type:unit-metric-time-second;
+	    	}
+		}
+
+		//Is it the same as the coding rate defined in ErrorCorrectionMethodType ? 
+		leaf noise-detection-exposed-key-pct {                     
+		    description "Exposed Key for Noise Detection as a percentage. Εxample: 5%";
+		    type uint8 {range "0..100";}
+		}
+	
+		leaf last-sync-pulse-detection-time {
+		    description "Last sync pulse detection time";
+		    type sdqc-type:Iso8601DateTimeType;
+		}
+
+        container timestamping-resolution {
+	    	config true; // configurable
+            description "Timestamping Resolution. Example: 1-10ns";
+	    
+	    	leaf min {
+                description "Minimum Timestamping Resolution";
+	        	type uint32;
+	    	}
+		    leaf max {
+	            description "Maximum Timestamping Resolution";
+		        type uint32;
+		    }
+	    	leaf time-unit {
+				description "Unit of time in seconds or sub-unit of. Default is ns.";
+	        	type sdqc-type:unit-metric-time-second;
+				default ns;
+	    	}
+        }
+        
+        //========//
+        // FLAGS //
+        //=======//
+
+		leaf empty-key-list-flag {
+		    description "Empty Key List Flag - 0/1 (1 = Key List Empty)";
+		    type boolean;
+		}
+
+		leaf sync-pulse-flag {
+		    description "Sync Pulse Flag: 0/1 (1 = Sync Pulse Detected)";
+		    type boolean;
+		}
+		
+		leaf tampering-detected-flag {
+		    description "Tampering Detected - 0/1 (1 = Tampering Detected";
+		    type boolean;
+		}
+	
+		//==========//
+        // REQUESTS //
+        //==========//
+ 		
+ 		// Do we need these at both the source as well as the destination?
+		leaf available-keys-count {
+		    type uint64;
+		    description "Number of available keys";
+		}
+		
+		leaf max-number-of-keys {
+		    type uint64;
+		    description "Maximum number of available keys";
+		}	
+    }
+}
+    
+    
+    

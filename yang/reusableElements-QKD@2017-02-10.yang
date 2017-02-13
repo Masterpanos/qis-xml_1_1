@@ -3,7 +3,7 @@ module reusableElements-QKD {
 	yang-version 1;
 	
     namespace "urn:ge:grc:tsn:scheduler";
-      
+
     prefix "scheduler";
 
     // import ietf-inet-types {
@@ -17,7 +17,11 @@ module reusableElements-QKD {
 	//import ietf-yang-types {
 	//	prefix "yang";
 	//}
-	
+	revision 2017-02-13 {
+		description "Corrected syntactical errros";
+		reference "IEEE-P1913 subgroup";
+	}
+
 	revision 2017-02-10 {
 		description "Initial draft";
         reference "TBD";
@@ -109,10 +113,9 @@ grouping PhotonSourceType {
                 description "Weakly Modulated Coherent Laser";
 
                 leaf quantum-output-phase-difference {
-
                 	config true;
                     description "Phase difference between the weak signal pulse and the reference signal.";
-                    value uint32;
+                    type uint32;
                 }
 
                 container quantum-output-state {
@@ -365,7 +368,7 @@ grouping PhotonDetectorType {
 	            }
 	        }
     	}
-
+    	
         case homodyne {
 
             description "Homodyne detector for continuous variable quantum states";	
