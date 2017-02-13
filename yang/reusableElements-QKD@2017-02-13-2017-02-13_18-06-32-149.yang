@@ -368,34 +368,23 @@ grouping PhotonDetectorType {
 	            }
 	        }
     	}
-    	
-        case homodyne {
 
-            description "Homodyne detector for continuous variable quantum states";	
+    	case multiple-photons {
+			
+			description "Photon counter for measuring multiple qubits for continuous variable protocols";	
 
-            container bandwidth {
+    		choice continuous-photon-detector {
 
-            	config false; // not currently configurable
-                description "Bandwidth of homodyne detector in Hz. Example: 300M Hz";
-	     	
-	     		leaf value {
-	         		description "The value specified in Hz";
-                    type uint64;
-                }
+    			case homodyne {
+		            description "Homodyne detector for continuous variable quantum states";	
+    			}
 
-                leaf count-unit {
-                	description "The unit of bandwidth";
-	         		type sdqc-type:unit-exponent-integral;
-                    default 0;
-                }
-            }
-        }
+    			case heterodyne {
+            		description "Heterodyne detector for continuous variable quantum states";	
+    			}
+    		}
 
-        case heterodyne {
-
-            description "Heterodyne detector for continuous variable quantum states";	
-
-            container bandwidth {
+    		container bandwidth {
 
                 config false; // not currently configurable
                 description "Bandwidth of homodyne detector in Hz. Example: 300M Hz";
@@ -411,7 +400,7 @@ grouping PhotonDetectorType {
                     default 0;
                 }
             }
-        }
+    	}
     }
 }
 
@@ -454,7 +443,10 @@ grouping QuantumChannelType {
 	}
 
 	leaf visibility {
+		description "Visibility in terms of percentage.";
 		config false;
+		type uint32;
+		default 100;
 		// Is it the same as the distance?
 	}
 }
